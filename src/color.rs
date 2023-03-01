@@ -12,3 +12,9 @@ impl Color {
         Self { r, g, b }
     }
 }
+
+impl Default for Color {
+    fn default() -> Self {
+        Self { r: 0, g: 0, b: 0 }
+    }
+}

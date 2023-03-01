@@ -1,23 +1,25 @@
 use crate::color::Color;
-use std::{
-    borrow::{Cow, ToOwned},
-    fmt::Display,
-    io::Write,
-};
+use std::fmt::Display;
 
-#[derive(PartialEq, Clone)]
-pub struct StyledContent<'a> {
+pub trait Colorize {
+    fn fg(self, color: Color) -> StyledContent;
+    fn bg(self, color: Color) -> StyledContent;
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct StyledContent {
     /// StyledContent is a struct that provides colored terminal output
     /// It has content field that containing string or &str,
     /// foreground that is text color and background that is background color.
-    pub content: Cow<'a, str>,
-    pub foreground: Color,
-    pub background: Color,
+    content: String,
+    foreground: Color,
+    background: Color,
+    // TODO style
 }
 
-impl<'a> StyledContent<'a> {
+impl StyledContent {
     /// Create new StyledContent struct.
-    pub fn new(foreground: Color, background: Color, content: Cow<'a, str>) -> Self {
+    pub fn new(foreground: Color, background: Color, content: String) -> Self {
         Self {
             content,
             foreground,
@@ -25,24 +27,20 @@ impl<'a> StyledContent<'a> {
         }
     }
 
-    /// Set background for StyledContent
-    pub fn bg(&mut self, bg: Color) {
-        self.background = bg;
+    pub fn get_content(&self) -> String {
+        self.content.clone()
     }
 
-    /// Set foreground for StyledContent
-    pub fn fg(&mut self, fg: Color) {
-        self.foreground = fg;
+    pub fn get_fg(&self) -> Color {
+        self.foreground.clone()
     }
 
-    /// Set content for StyledContent
-    pub fn content(&mut self, content: Cow<'a, str>) {
-        self.content = content;
+    pub fn get_bg(&self) -> Color {
+        self.background.clone()
     }
 }
 
-impl<'a> Display for StyledContent<'a> {
-    //"\x1b[48;2;255;0;0mtext\u{001b}[0ming")
+impl Display for StyledContent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -58,16 +56,55 @@ impl<'a> Display for StyledContent<'a> {
     }
 }
 
-impl<'a> Default for StyledContent<'a> {
+impl Default for StyledContent {
     fn default() -> Self {
         Self {
-            content: Cow::Owned("".to_string()),
+            content: String::default(),
             foreground: Color {
                 r: 255,
                 g: 255,
                 b: 255,
             },
             background: Color { r: 0, g: 0, b: 0 },
+        }
+    }
+}
+
+impl<'a> From<&'a str> for StyledContent {
+    fn from(value: &'a str) -> Self {
+        Self {
+            content: String::from(value),
+            ..StyledContent::default()
+        }
+    }
+}
+
+impl Colorize for StyledContent {
+    fn bg(mut self, color: Color) -> StyledContent {
+        self.background = color;
+        self
+    }
+
+    fn fg(mut self, color: Color) -> StyledContent {
+        self.foreground = color;
+        self
+    }
+}
+
+impl<'a> Colorize for &'a str {
+    fn fg(self, color: Color) -> StyledContent {
+        StyledContent {
+            content: String::from(self),
+            foreground: color,
+            ..Default::default()
+        }
+    }
+
+    fn bg(self, color: Color) -> StyledContent {
+        StyledContent {
+            content: String::from(self),
+            background: color,
+            ..Default::default()
         }
     }
 }
